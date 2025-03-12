@@ -9,6 +9,7 @@
 #include <esp_timer.h>
 #include <ml307_http.h>
 #include <ml307_ssl_transport.h>
+#include "ml307_transport.h"
 #include <web_socket.h>
 #include <ml307_mqtt.h>
 #include <ml307_udp.h>
@@ -72,7 +73,15 @@ Http* Ml307Board::CreateHttp() {
 }
 
 WebSocket* Ml307Board::CreateWebSocket() {
-    return new WebSocket(new Ml307SslTransport(modem_, 0));
+#ifdef CONFIG_CONNECTION_TYPE_WEBSOCKET
+    std::string url = CONFIG_WEBSOCKET_URL;
+    if (url.find("wss://") == 0) {
+        return new WebSocket(new Ml307SslTransport(modem_, 0));
+    } else {
+        return new WebSocket(new Ml307Transport(modem_, 0));
+    }
+#endif
+    return nullptr;
 }
 
 Mqtt* Ml307Board::CreateMqtt() {

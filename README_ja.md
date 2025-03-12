@@ -22,7 +22,7 @@
 
 ## 実装済みの機能
 
-- Wi-Fi / ML307 Cat.1 4G
+- Wi-Fi / ML307 Cat.1 
 - BOOT ボタンによる起動と中断、クリックと長押しの2種類のトリガーに対応
 - オフライン音声起動 [ESP-SR](https://github.com/espressif/esp-sr)
 - ストリーミング音声対話（WebSocket または UDP プロトコル）

@@ -10,5 +10,6 @@ dependencies.lock
 .env
 releases/
 main/assets/lang_config.h
+.DS_Store
 /.idea/
 /debug.log

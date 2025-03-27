@@ -3,11 +3,13 @@
 #include "application.h"
 #include "display.h"
 #include "font_awesome_symbols.h"
+#include "assets/lang_config.h"
 
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <ml307_http.h>
 #include <ml307_ssl_transport.h>
+#include "ml307_transport.h"
 #include <web_socket.h>
 #include <ml307_mqtt.h>
 #include <ml307_udp.h>
@@ -24,7 +26,7 @@ std::string Ml307Board::GetBoardType() {
 
 void Ml307Board::StartNetwork() {
     auto display = Board::GetInstance().GetDisplay();
-    display->SetStatus("初始化模块");
+    display->SetStatus(Lang::Strings::DETECTING_MODULE);
     modem_.SetDebug(false);
     modem_.SetBaudRate(921600);
 
@@ -44,13 +46,13 @@ void Ml307Board::StartNetwork() {
 void Ml307Board::WaitForNetworkReady() {
     auto& application = Application::GetInstance();
     auto display = Board::GetInstance().GetDisplay();
-    display->SetStatus("等待网络...");
+    display->SetStatus(Lang::Strings::REGISTERING_NETWORK);
     int result = modem_.WaitForNetworkReady();
     if (result == -1) {
-        application.Alert("Error", "请插入SIM卡");
+        application.Alert(Lang::Strings::ERROR, Lang::Strings::PIN_ERROR, "sad", Lang::Sounds::P3_ERR_PIN);
         return;
     } else if (result == -2) {
-        application.Alert("Error", "无法接入网络，请检查流量卡状态");
+        application.Alert(Lang::Strings::ERROR, Lang::Strings::REG_ERROR, "sad", Lang::Sounds::P3_ERR_REG);
         return;
     }
 
@@ -71,7 +73,15 @@ Http* Ml307Board::CreateHttp() {
 }
 
 WebSocket* Ml307Board::CreateWebSocket() {
-    return new WebSocket(new Ml307SslTransport(modem_, 0));
+#ifdef CONFIG_CONNECTION_TYPE_WEBSOCKET
+    std::string url = CONFIG_WEBSOCKET_URL;
+    if (url.find("wss://") == 0) {
+        return new WebSocket(new Ml307SslTransport(modem_, 0));
+    } else {
+        return new WebSocket(new Ml307Transport(modem_, 0));
+    }
+#endif
+    return nullptr;
 }
 
 Mqtt* Ml307Board::CreateMqtt() {
@@ -105,8 +115,8 @@ const char* Ml307Board::GetNetworkStateIcon() {
 
 std::string Ml307Board::GetBoardJson() {
     // Set the board type for OTA
-    std::string board_type = BOARD_TYPE;
-    std::string board_json = std::string("{\"type\":\"" + board_type + "\",");
+    std::string board_json = std::string("{\"type\":\"" BOARD_TYPE "\",");
+    board_json += "\"name\":\"" BOARD_NAME "\",";
     board_json += "\"revision\":\"" + modem_.GetModuleName() + "\",";
     board_json += "\"carrier\":\"" + modem_.GetCarrierName() + "\",";
     board_json += "\"csq\":\"" + std::to_string(modem_.GetCsq()) + "\",";
